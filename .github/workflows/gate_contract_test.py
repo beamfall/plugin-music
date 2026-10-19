@@ -102,7 +102,7 @@ JOB_SPECS = {
                 {
                     "uses": LINT_ACTION,
                     "with": {
-                        "version": "v2.12.2",
+                        "version": "v2.15.0",
                         "working-directory": "beamfall-plugin-music",
                     },
                 },

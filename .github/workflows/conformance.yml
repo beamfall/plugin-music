@@ -58,7 +58,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@25e2cdc5eb1d7a04fdc45ff538f1a00e960ae128
         with:
-          version: v2.12.2
+          version: v2.15.0
           working-directory: beamfall-plugin-music
 
   race:
