@@ -1,0 +1,137 @@
+# Music plugin conformance gate.
+# Runs sdktest golden vectors against the SDK contract on every push, pull
+# request and tagged release.
+name: conformance
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  schedule:
+    - cron: '43 5 * * 3'
+  workflow_dispatch:
+    inputs:
+      sdk_ref:
+        description: 'plugin-sdk ref to test against'
+        required: false
+        type: string
+
+jobs:
+  # The ordinary gate and race detector run in parallel; PR latency is the
+  # slower job rather than their sum.
+  fast-conformance:
+    name: fast conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          path: beamfall-plugin-music
+      - name: Checkout SDK override
+        if: ${{ inputs.sdk_ref != '' }}
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          repository: beamfall/plugin-sdk
+          ref: ${{ inputs.sdk_ref }}
+          path: beamfall-plugin-sdk
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: beamfall-plugin-music/go.mod
+      - name: Use SDK override
+        if: ${{ inputs.sdk_ref != '' }}
+        working-directory: beamfall-plugin-music
+        run: go mod edit -replace github.com/beamfall/plugin-sdk=../beamfall-plugin-sdk
+      - name: gofmt
+        working-directory: beamfall-plugin-music
+        run: gofmt -l . | tee /dev/stderr | (! grep -q .)
+      - name: vet
+        working-directory: beamfall-plugin-music
+        run: go vet ./...
+      - name: test-depth contracts
+        working-directory: beamfall-plugin-music
+        run: script/gate.sh contracts
+      - name: tests and exact per-package coverage
+        working-directory: beamfall-plugin-music
+        run: script/gate.sh coverage
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@25e2cdc5eb1d7a04fdc45ff538f1a00e960ae128
+        with:
+          version: v2.12.2
+          working-directory: beamfall-plugin-music
+
+  race:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          path: beamfall-plugin-music
+      - name: Checkout SDK override
+        if: ${{ inputs.sdk_ref != '' }}
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          repository: beamfall/plugin-sdk
+          ref: ${{ inputs.sdk_ref }}
+          path: beamfall-plugin-sdk
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: beamfall-plugin-music/go.mod
+      - name: Use SDK override
+        if: ${{ inputs.sdk_ref != '' }}
+        working-directory: beamfall-plugin-music
+        run: go mod edit -replace github.com/beamfall/plugin-sdk=../beamfall-plugin-sdk
+      - name: race
+        working-directory: beamfall-plugin-music
+        run: script/gate.sh race
+
+  # Preserve the established required-check name while making both parallel
+  # jobs mechanically blocking.
+  conformance:
+    name: conformance
+    needs: [fast-conformance, race]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require fast and race jobs
+        env:
+          FAST_RESULT: ${{ needs.fast-conformance.result }}
+          RACE_RESULT: ${{ needs.race.result }}
+        run: |
+          test "$FAST_RESULT" = success
+          test "$RACE_RESULT" = success
+
+  # Untrusted filename/tag, Last.fm CSV/response-envelope, and ListenBrainz JSON
+  # parsers get bounded discovery time outside the fast PR gate. Manual dispatch
+  # is useful for SDK override qualification without admitting live traffic.
+  fuzz:
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          path: beamfall-plugin-music
+      - name: Checkout SDK override
+        if: ${{ inputs.sdk_ref != '' }}
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          repository: beamfall/plugin-sdk
+          ref: ${{ inputs.sdk_ref }}
+          path: beamfall-plugin-sdk
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: beamfall-plugin-music/go.mod
+      - name: Use SDK override
+        if: ${{ inputs.sdk_ref != '' }}
+        working-directory: beamfall-plugin-music
+        run: go mod edit -replace github.com/beamfall/plugin-sdk=../beamfall-plugin-sdk
+      - name: bounded parser fuzz
+        working-directory: beamfall-plugin-music
+        env:
+          FUZZ_TIME: 20s
+        run: script/gate.sh fuzz

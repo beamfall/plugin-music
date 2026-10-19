@@ -1,0 +1,12 @@
+version: "2"
+
+# Pinned golangci-lint config for the plugin SDK.
+# Linter set: the golangci-lint v2 defaults (errcheck, govet, ineffassign,
+# staticcheck, unused) plus misspell for doc/comment hygiene. Plugin repos
+# adopting this config should copy this file as-is (shared across plugin repos).
+linters:
+  enable:
+    - misspell
+
+run:
+  timeout: 5m
