@@ -1,5 +1,5 @@
-github.com/beamfall/plugin-sdk v0.3.2 h1:8+2Dq7CXYHbNANhtWHWA1FrLPh0hfklVms0hxgr4mA4=
-github.com/beamfall/plugin-sdk v0.3.2/go.mod h1:wfIk4WVwnXbxHfu323kwUp76re+/owV9lYaGZPn7kVQ=
+github.com/beamfall/plugin-sdk v0.3.3 h1:Y7eJNn+OV6KQ8xbdfPz6S7RUTD/vWfyugwferc/zaQI=
+github.com/beamfall/plugin-sdk v0.3.3/go.mod h1:9Rf4igNoBecxjLj558B2VanL4lgvfAMBiw5WP9TmnI4=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
 golang.org/x/sys v0.47.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
 golang.org/x/text v0.40.0 h1:Ub2Z6/xjgF1WrYQz2nuITOEegKFtiIy+rieRJ5lHZKs=
