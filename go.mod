@@ -1,6 +1,6 @@
 module github.com/beamfall/plugin-music
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/beamfall/plugin-sdk v0.3.3
