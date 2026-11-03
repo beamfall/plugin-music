@@ -28,6 +28,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           path: beamfall-plugin-music
+          persist-credentials: false
       - name: Checkout SDK override
         if: ${{ inputs.sdk_ref != '' }}
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -35,6 +36,7 @@ jobs:
           repository: beamfall/plugin-sdk
           ref: ${{ inputs.sdk_ref }}
           path: beamfall-plugin-sdk
+          persist-credentials: false
       - name: Set up Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
@@ -68,6 +70,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           path: beamfall-plugin-music
+          persist-credentials: false
       - name: Checkout SDK override
         if: ${{ inputs.sdk_ref != '' }}
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -75,6 +78,7 @@ jobs:
           repository: beamfall/plugin-sdk
           ref: ${{ inputs.sdk_ref }}
           path: beamfall-plugin-sdk
+          persist-credentials: false
       - name: Set up Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
@@ -115,6 +119,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           path: beamfall-plugin-music
+          persist-credentials: false
       - name: Checkout SDK override
         if: ${{ inputs.sdk_ref != '' }}
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -122,6 +127,7 @@ jobs:
           repository: beamfall/plugin-sdk
           ref: ${{ inputs.sdk_ref }}
           path: beamfall-plugin-sdk
+          persist-credentials: false
       - name: Set up Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
