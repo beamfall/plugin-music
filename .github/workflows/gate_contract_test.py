@@ -40,7 +40,7 @@ REQUIRED_FUZZ_TARGETS = {
 
 CHECKOUT_PLUGIN = {
     "uses": CHECKOUT_ACTION,
-    "with": {"path": "beamfall-plugin-music"},
+    "with": {"path": "beamfall-plugin-music", "persist-credentials": False},
 }
 CHECKOUT_SDK = {
     "if": SDK_IF,
@@ -49,6 +49,7 @@ CHECKOUT_SDK = {
         "repository": "beamfall/plugin-sdk",
         "ref": "${{ inputs.sdk_ref }}",
         "path": "beamfall-plugin-sdk",
+        "persist-credentials": False,
     },
 }
 SETUP_GO = {
