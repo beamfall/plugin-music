@@ -1,2 +1,7 @@
 /artifacts/
 .DS_Store
+
+# Generated OpenSpec agent commands (openspec update)
+.claude/commands/opsx/
+.claude/skills/openspec-*/
+.agents/skills/openspec-*/
