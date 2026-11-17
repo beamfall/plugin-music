@@ -28,7 +28,9 @@ Tower QA (2026-11-17) found three Music plugin defects:
   2. The stem with separator punctuation trimmed, such as `00`.
 
   It fails only when neither yields any text. A TITLE tag still wins over all of these.
-- The bundle version moves to `0.1.10`, the version of the next release tag.
+- The bundle `Version` stays `0.1.5`. It is pinned to the SDK compatibility matrix
+  (`plugin-sdk/compatibility/matrix.json`), which has producer evidence only for music 0.1.5.
+  Release tags v0.1.6 to v0.1.9 kept it too, and the release tag for this change is v0.1.10.
 
 ## Non-goals
 

@@ -17,6 +17,5 @@
 
 ## 4. Close
 
-- [ ] 4.1 Bump the bundle version to `0.1.10`
-- [ ] 4.2 Run `script/gate.sh`
-- [ ] 4.3 Archive this change with `openspec archive music-identify-and-browse`
+- [ ] 4.1 Run `script/gate.sh`
+- [ ] 4.2 Archive this change with `openspec archive music-identify-and-browse`
