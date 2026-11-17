@@ -81,8 +81,36 @@ func TestParseConformance(t *testing.T) {
 			WantOK: true,
 		},
 		{
-			Name:   "no recoverable title",
+			// No letter-bearing title (CORE-2313): the trimmed stem is the
+			// title, never core's raw-stem fallback; the scorer keeps a
+			// bare number from auto-applying.
+			Name:   "bare-number stem falls back to the stem",
 			Path:   "07.flac",
+			Want:   sdk.ParsedMedia{Title: "07", Class: "audio"},
+			WantOK: true,
+		},
+		{
+			Name:   "empty residue after the ordinal is trimmed, not left as 00 -",
+			Path:   "00 -.flac",
+			Want:   sdk.ParsedMedia{Title: "00", Class: "audio"},
+			WantOK: true,
+		},
+		{
+			Name:   "numeric title is a title, not an album year",
+			Path:   "05 - 1979.flac",
+			Want:   sdk.ParsedMedia{Title: "1979", Class: "audio", Index: 5},
+			WantOK: true,
+		},
+		{
+			Name:   "tag title wins over a junk filename",
+			Path:   "00 -.flac",
+			Probe:  sdk.ParseProbe{HasAudio: true, Tags: map[string]string{"title": "Intro"}},
+			Want:   sdk.ParsedMedia{Title: "Intro", Class: "audio"},
+			WantOK: true,
+		},
+		{
+			Name:   "punctuation-only stem still fails closed",
+			Path:   "-.flac",
 			Want:   sdk.ParsedMedia{},
 			WantOK: false,
 		},
@@ -102,6 +130,10 @@ func TestScoreConformance(t *testing.T) {
 			Parsed: sdk.ParsedMedia{Title: "So What"}, Want: 1.0},
 		{Name: "containment (no year) is docked below auto-apply", CandTitle: "So What (Remastered)", CandYear: 0,
 			Parsed: sdk.ParsedMedia{Title: "So What"}, Want: 0.60},
+		{Name: "bare-number exact title (no year) stays below auto-apply", CandTitle: "00", CandYear: 0,
+			Parsed: sdk.ParsedMedia{Title: "00"}, Want: 0.60},
+		{Name: "bare-number exact title with corroborating year", CandTitle: "1979", CandYear: 1996,
+			Parsed: sdk.ParsedMedia{Title: "1979", Year: 1996}, Want: 1.0},
 		{Name: "non-Latin exact title", CandTitle: "夜に駆ける", CandYear: 0,
 			Parsed: sdk.ParsedMedia{Title: "夜に駆ける"}, Want: 1.0},
 	})

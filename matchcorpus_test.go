@@ -276,6 +276,12 @@ func tagPoorRipFamily() sdktest.MatchFamily {
 			{Name: "bare-track-ordinal", Path: "07 - Midnight Drive.flac", Candidates: candidates, WantID: "midnight-drive"},
 			{Name: "disc-track-ordinal", Path: "1-05 Midnight Drive.flac", Candidates: candidates, WantID: "midnight-drive"},
 			{Name: "digits-only-no-title", Path: "07.flac", Candidates: candidates, WantID: ""},
+			// CORE-2313: the "00" fallback title must not auto-apply even
+			// against an equal candidate when no year corroborates it.
+			{Name: "empty-residue-fallback-does-not-auto-apply", Path: "00 -.flac",
+				Candidates: []sdk.Candidate{{ID: "zero", Title: "00"}}, WantID: "", MinScore: music.AutoApplyThreshold - 0.01},
+			{Name: "spaced-empty-residue-fallback-does-not-auto-apply", Path: "00 - .flac",
+				Candidates: []sdk.Candidate{{ID: "zero", Title: "00"}}, WantID: "", MinScore: music.AutoApplyThreshold - 0.01},
 		},
 	}
 }

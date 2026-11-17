@@ -23,6 +23,11 @@ const AutoApplyThreshold = 0.75
 // exempt: a fully-specified unique title is safe to auto-apply alone.
 const noCorroborationPenalty = 0.25
 
+// containmentScore is the title similarity for one normalized title inside
+// the other. It is also the cap an exact but letterless title (a bare number
+// such as the fallback "00") takes when no year corroborates it.
+const containmentScore = 0.85
+
 // Scorer implements sdk.MatchScorer for audio Media:
 // how confidently one MusicBrainz release/recording Candidate matches a file's
 // parsed guess. It is the match-confidence half of the plugin's two compiled
@@ -48,7 +53,7 @@ func NewScorer() *Scorer { return &Scorer{} }
 // When the parse carried no year there is nothing to corroborate the title,
 // so the fail-closed asymmetry ("wrong auto-apply is worse than no
 // match") applies: an *exact* title still scores 1.0 (safe to auto-apply
-// alone), but a *non-exact* title is docked noCorroborationPenalty so it
+// alone, unless it has no letters), but a *non-exact* title is docked noCorroborationPenalty so it
 // cannot clear AutoApplyThreshold on title similarity alone — a mediocre
 // single candidate with no year disambiguation routes to manual review rather
 // than auto-applying.
@@ -58,19 +63,24 @@ func (Scorer) Score(candidate sdk.Candidate, parsed sdk.ParsedMedia) float64 {
 		return 0
 	}
 	if parsed.Year == 0 {
-		return noYearScore(title)
+		return noYearScore(title, hasLetter(parsed.Title))
 	}
 	const titleWeight, yearWeight = 0.7, 0.3
 	return titleWeight*title + yearWeight*yearScore(parsed.Year, candidate.Year)
 }
 
 // noYearScore is the fail-closed verdict when the filename carried no year: an
-// exact title (1.0) passes through — a unique title needs no corroboration —
-// while any weaker title is docked noCorroborationPenalty (floored at 0) so it
-// falls below AutoApplyThreshold and defers to manual review.
-func noYearScore(title float64) float64 {
-	if title == 1 {
+// exact distinctive title (1.0) passes through — a unique title needs no
+// corroboration — while any weaker title is docked noCorroborationPenalty
+// (floored at 0) so it falls below AutoApplyThreshold and defers to manual
+// review. An exact title with no letters (a bare number like "00" or "1979")
+// is not distinctive (CORE-2313), so it is scored as a containment match.
+func noYearScore(title float64, distinctive bool) float64 {
+	if title == 1 && distinctive {
 		return 1
+	}
+	if title == 1 {
+		title = containmentScore
 	}
 	if docked := title - noCorroborationPenalty; docked > 0 {
 		return docked
@@ -90,7 +100,7 @@ func titleScore(parsedTitle, candTitle string) float64 {
 		return 1
 	}
 	if strings.Contains(a, b) || strings.Contains(b, a) {
-		return 0.85
+		return containmentScore
 	}
 	return jaccard(strings.Fields(a), strings.Fields(b))
 }

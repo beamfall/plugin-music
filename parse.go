@@ -43,7 +43,8 @@ var (
 // Parse derives a best-guess ParsedMedia for one audio file. Class is always
 // "audio" on a successful parse (the single music MediaClass). ok is true only
 // when a non-empty Title was recovered — from a TITLE tag when present, else
-// from the filename after stripping the track-ordinal prefix and extension.
+// from the filename after stripping the track-ordinal prefix and extension,
+// else from the trimmed ordinal residue or stem (a bare number such as "07").
 func (p *Parser) Parse(path string, probe sdk.ParseProbe) (sdk.ParsedMedia, bool) {
 	var parsed sdk.ParsedMedia
 	parsed.Class = "audio"
@@ -78,18 +79,36 @@ func (p *Parser) Parse(path string, probe sdk.ParseProbe) (sdk.ParsedMedia, bool
 
 	// A folded-in album year bounds the title and fills Year when tags lacked it.
 	title, year := splitYear(rest)
-	if parsed.Year == 0 && year > 0 {
-		parsed.Year = year
+	if t := cleanTitle(title); hasLetter(t) {
+		parsed.Title = t
+		if parsed.Year == 0 && year > 0 {
+			parsed.Year = year
+		}
+		return parsed, true
 	}
 
-	parsed.Title = cleanTitle(title)
-	if !hasLetter(parsed.Title) {
-		// A digits-only or empty residue (e.g. "07.flac") is a bare track
-		// ordinal with no title to score on — fail closed to the unmatched
-		// queue rather than emit a number as a title.
+	// No letter-bearing title (CORE-2313): "05 - 1979.flac" is a numeric
+	// title, not an album year, and "00 -.flac" has nothing after the
+	// ordinal. Fall back to the ordinal-stripped residue, then the whole
+	// stem, trimmed of separator punctuation — never the raw stem core would
+	// otherwise store ("00 -"). The scorer keeps a letterless title from
+	// auto-applying without a year.
+	parsed.Title = fallbackTitle(rest)
+	if parsed.Title == "" {
+		parsed.Title = fallbackTitle(name)
+	}
+	if parsed.Title == "" {
 		return sdk.ParsedMedia{}, false
 	}
 	return parsed, true
+}
+
+// fallbackTitle cleans raw and trims leading and trailing characters that are
+// neither letters nor digits, so "00 -" yields "00" and "-" yields "".
+func fallbackTitle(raw string) string {
+	return strings.TrimFunc(cleanTitle(raw), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
 }
 
 // hasLetter reports whether s carries at least one Unicode letter — the signal

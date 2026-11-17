@@ -194,3 +194,23 @@ func TestParseThreeSegmentNNArtistTitleForm(t *testing.T) {
 		t.Errorf("Title = %q, want %q", got.Title, "Livin On A Prayer")
 	}
 }
+
+// TestFallbackTitle covers the CORE-2313 letterless-title fallback: separator
+// punctuation around a bare number is trimmed, and punctuation alone yields
+// nothing (the parse then fails closed).
+func TestFallbackTitle(t *testing.T) {
+	cases := map[string]string{
+		"00 -":   "00",
+		"00 - ":  "00",
+		"1979":   "1979",
+		"(1979)": "1979",
+		"-":      "",
+		"":       "",
+		"07_":    "07",
+	}
+	for in, want := range cases {
+		if got := fallbackTitle(in); got != want {
+			t.Errorf("fallbackTitle(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

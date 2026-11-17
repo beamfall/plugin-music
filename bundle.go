@@ -47,6 +47,11 @@ func Bundle() sdk.Bundle {
 		// release-date/MBID for enrichment; these are the Track's copies from
 		// embedded tags).
 		MediaFields: []sdk.FieldSpec{
+			// `class` is the media.class key the musicbrainz scraper's
+			// ImpliedMediaFields writes; core's identify pipeline routes a
+			// parsed Track to the searchable scraper implying its class.
+			{Name: "class", Type: "text",
+				Label: sdk.LocaleString{"en": "Class", "fr": "Classe"}},
 			{Name: "album", Type: "text", Searchable: true,
 				Label: sdk.LocaleString{"en": "Album", "fr": "Album"}},
 			{Name: "composer", Type: "text", Searchable: true,
@@ -182,10 +187,30 @@ func Bundle() sdk.Bundle {
 			{ID: "recently-added", Kind: "shelf",
 				Title:       sdk.LocaleString{"en": "Recently Added", "fr": "Ajouts récents"},
 				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "recently-added"}},
+			// Album and Artist browse rows: entity-items lists the declared
+			// Entity Kind's members; each opens its detail Layout below.
+			{ID: "albums", Kind: "shelf",
+				Title:       sdk.LocaleString{"en": "Albums", "fr": "Albums"},
+				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-items", EntityKind: "album"}},
+			{ID: "artists", Kind: "shelf",
+				Title:       sdk.LocaleString{"en": "Artists", "fr": "Artistes"},
+				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-items", EntityKind: "artist"}},
 			{ID: "library", Kind: "grid",
 				Title:       sdk.LocaleString{"en": "Library", "fr": "Bibliothèque"},
 				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "all-items"}},
-		}}},
+		}},
+			// Album and Artist pages list the entity's Tracks.
+			{ID: "album-detail", Role: "detail", EntityKind: "album", Sections: []sdk.SectionSpec{
+				{ID: "album-tracks", Kind: "list",
+					Title:       sdk.LocaleString{"en": "Tracks", "fr": "Pistes"},
+					ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-media"}},
+			}},
+			{ID: "artist-detail", Role: "detail", EntityKind: "artist", Sections: []sdk.SectionSpec{
+				{ID: "artist-tracks", Kind: "list",
+					Title:       sdk.LocaleString{"en": "Tracks", "fr": "Pistes"},
+					ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-media"}},
+			}},
+		},
 		// Migration Wizard importers. The Music plugin's
 		// launch-scope source is a Last.fm scrobble CSV export: play history
 		// (counts + last-played) under the watch-state engagement category,
@@ -255,43 +280,49 @@ func Bundle() sdk.Bundle {
 				// little headroom.
 				AuthRef:              "",
 				MinRequestIntervalMS: 1100,
-				// Untagged-release identification: GET /release?query=…
-				// returns {"releases": [{id, title, date, disambiguation},
-				// …]} — the same keys as the lookup document, so one
-				// FieldMap serves both; the chosen candidate's MBID feeds
-				// the lookup below.
-				SearchTemplate:  "/release?query={query}&fmt=json",
-				CandidatesPath:  "releases",
+				// Track identification (CORE-2312). A parsed Track is
+				// class `audio`; core selects the searchable scraper whose
+				// implied media.class matches, so this declaration is what
+				// routes Tracks here at all.
+				ImpliedMediaFields: map[string]string{"media.class": "audio"},
+				// Recording search, never release search: a release is an
+				// album, and applying one would write the album's title onto
+				// the Track. GET /recording?query=… returns {"recordings":
+				// [{id, title, first-release-date, disambiguation}, …]}.
+				// Core passes only the parsed title as {query}; narrowing by
+				// artist/album needs a core or SDK query seam.
+				SearchTemplate:  "/recording?query={query}&fmt=json",
+				CandidatesPath:  "recordings",
 				CandidateIDPath: "id",
-				// Release (album) lookup by MBID, JSON format, with artist
-				// credits and genres inlined. Enrichment-only: the library
-				// is fully browsable from embedded tags alone.
-				LookupTemplate: "/release/{id}?fmt=json&inc=artist-credits+release-groups+genres",
+				// Recording lookup by MBID, with artist credits, releases
+				// and genres inlined. Enrichment-only: the library is fully
+				// browsable from embedded tags alone.
+				LookupTemplate: "/recording/{id}?fmt=json&inc=artist-credits+releases+genres",
 				FieldMap: map[string]string{
-					// Real MusicBrainz release-lookup JSON paths.
+					// Real MusicBrainz recording-lookup JSON paths.
 					"title": "title",
 					// MusicBrainz returns a full (sometimes partial)
 					// YYYY-MM-DD date; the transform derives the year.
-					"year":    "date",
+					"year":    "first-release-date",
 					"summary": "disambiguation",
 				},
 				Transforms: map[string]string{"year": "year-from-date"},
 				// SearchFieldMap makes the search-candidate mapping explicit.
-				// MusicBrainz /release?query=… returns the same top-level
-				// shape as the lookup document (title, date, disambiguation),
-				// so the paths are identical — declared here so each template's
-				// effective map is auditable without cross-referencing FieldMap.
+				// /recording?query=… returns the same top-level keys as the
+				// lookup document, so the paths are identical — declared here
+				// so each template's effective map is auditable without
+				// cross-referencing FieldMap.
 				SearchFieldMap: map[string]string{
 					"title":   "title",
-					"year":    "date",
+					"year":    "first-release-date",
 					"summary": "disambiguation",
 				},
-				// EntityMaps extract artist-credit entries from the release
+				// EntityMaps extract artist-credit entries from the recording
 				// lookup document and hydrate them as Artist entities in the
 				// Media's Library, linked to the identified Track Media via the
 				// artist kind's appears-on relation.
 				//
-				// MusicBrainz release lookup with ?inc=artist-credits returns:
+				// MusicBrainz recording lookup with ?inc=artist-credits returns:
 				//   "artist-credit": [
 				//     {"name": "<credited-as>",
 				//      "artist": {"id": "<mbid>", "name": "<canonical>",
@@ -327,7 +358,8 @@ func Bundle() sdk.Bundle {
 				DisplayName: sdk.L("Cover Art Archive"),
 				Kind:        "http-json",
 				Endpoint:    "https://coverartarchive.org",
-				// Same MBID keyspace as MusicBrainz; no auth, same
+				// Keyed on release MBIDs (not the recording MBIDs the
+				// musicbrainz scraper identifies); no auth, same
 				// please-send-a-User-Agent etiquette.
 				AuthRef:        "",
 				LookupTemplate: "/release/{id}",
