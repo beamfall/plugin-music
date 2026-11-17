@@ -27,6 +27,9 @@ type Parser struct{}
 func NewParser() *Parser { return &Parser{} }
 
 var (
+	// A stem that is only a 1–3 digit track ordinal ("07"), never a
+	// 4-digit year-like title ("1979").
+	reBareOrdinal = regexp.MustCompile(`^\d{1,3}$`)
 	// A leading disc-track ("1-05", "1.05") or bare track ("05", "5.", "5 -")
 	// ordinal prefix, the dominant tag-poor rip convention. The optional first
 	// group is the disc; the second is the track. Anchored at the start after
@@ -56,6 +59,12 @@ func (p *Parser) Parse(path string, probe sdk.ParseProbe) (sdk.ParsedMedia, bool
 	}
 	if tags.ReleaseYear > 0 {
 		parsed.Year = tags.ReleaseYear
+	}
+	// Identification scores against a recording's first-release-date, so the
+	// original release year outranks a reissue's DATE. Hydration keeps its own
+	// DATE-first order for the Track's release fields.
+	if y := originalYear(probe.Tags); y > 0 {
+		parsed.Year = y
 	}
 
 	// Tag TITLE is authoritative when present; the filename is the fallback.
@@ -100,7 +109,18 @@ func (p *Parser) Parse(path string, probe sdk.ParseProbe) (sdk.ParsedMedia, bool
 	if parsed.Title == "" {
 		return sdk.ParsedMedia{}, false
 	}
+	// A bare ordinal stem ("07.flac") carries no separator for
+	// stripTrackPrefix, but it is still the track number.
+	if parsed.Index == 0 && track == 0 && reBareOrdinal.MatchString(parsed.Title) {
+		parsed.Index = atoi(parsed.Title)
+	}
 	return parsed, true
+}
+
+// originalYear returns the year of the ORIGINALDATE / ORIGINALYEAR tag, or 0.
+func originalYear(tags map[string]string) int {
+	_, year := parseReleaseDate(firstTagValue(normalizeTags(tags), "originaldate", "originalyear"))
+	return year
 }
 
 // fallbackTitle cleans raw and trims leading and trailing characters that are

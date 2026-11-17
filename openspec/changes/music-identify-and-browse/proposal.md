@@ -19,8 +19,15 @@ Tower QA (2026-11-17) found three Music plugin defects:
   declares the text Media field `class` that this key requires.
 - The `musicbrainz` scraper searches and looks up **recordings** (`/recording`) instead of
   releases. A candidate's year comes from `first-release-date`.
-- The scorer does not auto-apply a title that has no letters (a bare number) unless a year
-  corroborates it.
+- The scorer never auto-applies a title that has no letters (a bare number, `00`, `1999`),
+  whatever the year: a letterless score is scaled by 0.7.
+- The parser prefers ORIGINALDATE (or ORIGINALYEAR) over DATE for the year, to match the
+  candidate's `first-release-date`. The scorer softens a parsed year later than the candidate's
+  (a reissue) to 0.15 of the year weight, below the threshold. A cover from a later year never
+  auto-applies over the original.
+- The lookup maps Track `poster` and `thumb` from `releases.0.id` to the Cover Art Archive
+  (`https://coverartarchive.org/release/{value}/front` and `/front-500`).
+- A bare ordinal stem (`07.flac`) fills the track index.
 - The home layout gains `Albums` and `Artists` shelves (`entity-items` Sources). It also gains
   `album-detail` and `artist-detail` layouts, which list each entity's Tracks (`entity-media`).
 - The parser tries more fallbacks when the filename has no letter-bearing title:
@@ -53,8 +60,14 @@ Tower QA (2026-11-17) found three Music plugin defects:
 - An unmatched-queue row from before this change holds a release MBID. Applying it after this
   change does a recording lookup that fails with an error, and the operator searches again. No
   Music row can exist in practice, because no Track ever reached the identify search.
-- A bare-number fallback title, such as `00`, scores at most 0.60 without a year. It queues for
-  review and never auto-applies.
+- A bare-number title, such as `00`, scores at most 0.70 with or without a year. It queues for
+  review and never auto-applies. This also holds for a tagged numeric title.
+- A rip tagged only with a reissue DATE (no ORIGINALDATE) still auto-applies a same-titled
+  recording first released in that reissue year. The scorer cannot see the artist, so this
+  closes only when the query seam carries artist.
+- Core follows the Cover Art Archive `/front` redirect to archive.org only if its artwork fetch
+  follows redirects. This has not been verified on a live server. sdktest v0.4.0's trace resolver
+  cannot index arrays, so the test pins the slot on the spec rather than through the trace.
 
 ## Acceptance evidence
 
@@ -63,8 +76,10 @@ Tower QA (2026-11-17) found three Music plugin defects:
   core scraper-selection rule, then `sdktest.CompileScraperTrace` over a recorded recording-search
   document, then the scorer, then the lookup trace. It produces a recording-search request, one
   winning candidate at or above `AutoApplyThreshold`, and the Track's own title and year.
-- Parser tests cover `00 -.flac`, `05 - 1979.flac` and a TITLE tag that wins over a junk filename.
-  A match-corpus case shows that a bare-number title does not auto-apply.
+- Parser tests cover `00 -.flac`, `05 - 1979.flac`, `01 - (1999).flac`, `07.flac`, ORIGINALDATE
+  over DATE, and a TITLE tag that wins over a junk filename. Match-corpus cases show that a
+  bare-number title does not auto-apply with or without a DATE tag, and that a later-year cover
+  never auto-applies over the original.
 - `gofmt -l`, `golangci-lint run`, `go test ./...` and `openspec validate --all --strict` pass.
 
 ## Rollback

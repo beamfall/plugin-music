@@ -350,8 +350,18 @@ func Bundle() sdk.Bundle {
 						},
 					},
 				},
-				// MusicBrainz serves no images itself — cover art comes
-				// from the Cover Art Archive scraper below.
+				// MusicBrainz serves no images itself. A recording carries
+				// its releases (inc=releases on lookup; inline on search
+				// results), so the first release's MBID renders into Cover
+				// Art Archive front-cover URLs for the Track.
+				ArtworkMap: map[string]string{
+					"poster": "releases.0.id",
+					"thumb":  "releases.0.id",
+				},
+				ArtworkURLTemplates: map[string]string{
+					"poster": "https://coverartarchive.org/release/{value}/front",
+					"thumb":  "https://coverartarchive.org/release/{value}/front-500",
+				},
 			},
 			{
 				ID:          "cover-art-archive",

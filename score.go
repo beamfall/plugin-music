@@ -24,9 +24,23 @@ const AutoApplyThreshold = 0.75
 const noCorroborationPenalty = 0.25
 
 // containmentScore is the title similarity for one normalized title inside
-// the other. It is also the cap an exact but letterless title (a bare number
-// such as the fallback "00") takes when no year corroborates it.
+// the other.
 const containmentScore = 0.85
+
+// letterlessScale multiplies the score of a parsed title with no letters (a
+// bare number such as "03", "00" or "1999", whether a stem fallback, an
+// ordinal mistaken for a title or a numeric title). Such a title is not
+// distinctive (CORE-2313): many recordings share it, so it never auto-applies
+// whatever the year — the best case, an exact title with an exact year, lands
+// at 0.70, below AutoApplyThreshold, while ranking is preserved.
+const letterlessScale = 0.7
+
+// reissueYearScore is the year credit when the parsed year is later than the
+// candidate's by more than one: the tag may carry a reissue's DATE while the
+// candidate is the original recording's first release. It ranks the original
+// above a conflicting later candidate (0.745 with an exact title) but stays
+// below AutoApplyThreshold, since a reissue date cannot confirm the match.
+const reissueYearScore = 0.15
 
 // Scorer implements sdk.MatchScorer for audio Media:
 // how confidently one MusicBrainz release/recording Candidate matches a file's
@@ -53,34 +67,34 @@ func NewScorer() *Scorer { return &Scorer{} }
 // When the parse carried no year there is nothing to corroborate the title,
 // so the fail-closed asymmetry ("wrong auto-apply is worse than no
 // match") applies: an *exact* title still scores 1.0 (safe to auto-apply
-// alone, unless it has no letters), but a *non-exact* title is docked noCorroborationPenalty so it
+// alone), but a *non-exact* title is docked noCorroborationPenalty so it
 // cannot clear AutoApplyThreshold on title similarity alone — a mediocre
 // single candidate with no year disambiguation routes to manual review rather
-// than auto-applying.
+// than auto-applying. A title with no letters is scaled by letterlessScale so
+// it never auto-applies.
 func (Scorer) Score(candidate sdk.Candidate, parsed sdk.ParsedMedia) float64 {
 	title := titleScore(parsed.Title, candidate.Title)
 	if title == 0 {
 		return 0
 	}
-	if parsed.Year == 0 {
-		return noYearScore(title, hasLetter(parsed.Title))
+	score := noYearScore(title)
+	if parsed.Year != 0 {
+		const titleWeight, yearWeight = 0.7, 0.3
+		score = titleWeight*title + yearWeight*yearScore(parsed.Year, candidate.Year)
 	}
-	const titleWeight, yearWeight = 0.7, 0.3
-	return titleWeight*title + yearWeight*yearScore(parsed.Year, candidate.Year)
+	if !hasLetter(parsed.Title) {
+		return letterlessScale * score
+	}
+	return score
 }
 
 // noYearScore is the fail-closed verdict when the filename carried no year: an
-// exact distinctive title (1.0) passes through — a unique title needs no
-// corroboration — while any weaker title is docked noCorroborationPenalty
-// (floored at 0) so it falls below AutoApplyThreshold and defers to manual
-// review. An exact title with no letters (a bare number like "00" or "1979")
-// is not distinctive (CORE-2313), so it is scored as a containment match.
-func noYearScore(title float64, distinctive bool) float64 {
-	if title == 1 && distinctive {
-		return 1
-	}
+// exact title (1.0) passes through — a unique title needs no corroboration —
+// while any weaker title is docked noCorroborationPenalty (floored at 0) so it
+// falls below AutoApplyThreshold and defers to manual review.
+func noYearScore(title float64) float64 {
 	if title == 1 {
-		title = containmentScore
+		return 1
 	}
 	if docked := title - noCorroborationPenalty; docked > 0 {
 		return docked
@@ -106,17 +120,21 @@ func titleScore(parsedTitle, candTitle string) float64 {
 }
 
 // yearScore corroborates the title: exact 1.0, ±1 year (release-vs-original
-// date drift) 0.5, otherwise 0. A zero candidate year (none parsed) is a
+// date drift) 0.5, a parsed year later than the candidate's (a possible
+// reissue date) reissueYearScore, and an earlier parsed year (the candidate
+// is a later cover or re-recording) 0. A zero candidate year (none parsed) is a
 // non-signal, not a conflict — 0.5 so a strong title still clears.
 func yearScore(parsedYear, candYear int) float64 {
 	if candYear == 0 {
 		return 0.5
 	}
-	switch diff := parsedYear - candYear; diff {
-	case 0:
+	switch diff := parsedYear - candYear; {
+	case diff == 0:
 		return 1
-	case 1, -1:
+	case diff == 1 || diff == -1:
 		return 0.5
+	case diff > 1:
+		return reissueYearScore
 	default:
 		return 0
 	}

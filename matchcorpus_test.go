@@ -54,6 +54,7 @@ func TestMatchCorpus(t *testing.T) {
 
 	sdktest.RunMatchCorpus(t, parser, music.NewScorer(), []sdktest.MatchFamily{
 		tagPoorRipFamily(),
+		reissueYearFamily(),
 		folderFallback,
 		extendedTags,
 		siblingLRC,
@@ -265,6 +266,33 @@ func mbidGroupingFamily() sdktest.MatchFamily {
 // Title") — resolving on the filename title alone with no embedded tags. A
 // bare-ordinal file with no recoverable title text (e.g. "07.flac") must fail
 // closed to unmatched rather than guess from a digit residue.
+// reissueYearFamily pins recording identification against reissue-tagged
+// files: candidates carry a recording's first-release-date, so ORIGINALDATE
+// must win over a reissue DATE, and a later same-titled cover must not
+// auto-apply over the original.
+func reissueYearFamily() sdktest.MatchFamily {
+	original := sdk.Candidate{ID: "original-1997", Title: "Airbag", Year: 1997}
+	cover := sdk.Candidate{ID: "cover-2017", Title: "Airbag", Year: 2017}
+	later := sdk.Candidate{ID: "cover-2020", Title: "Airbag", Year: 2020}
+	return sdktest.MatchFamily{
+		Name: "reissue-year",
+		Cases: []sdktest.MatchCase{
+			{Name: "originaldate-picks-original-over-reissue-year-cover", Path: "Reissue/01 - Airbag.flac",
+				Probe: sdk.ParseProbe{Tags: map[string]string{
+					"title": "Airbag", "date": "2017-06-23", "originaldate": "1997-05-21",
+				}},
+				Candidates: []sdk.Candidate{cover, original}, WantID: "original-1997",
+				MinScore: music.AutoApplyThreshold - 0.01},
+			// DATE-only reissue: the original ranks above the later cover
+			// (0.745 vs 0.70) but neither is confirmed, so it fails closed.
+			{Name: "date-only-reissue-original-does-not-auto-apply", Path: "Reissue/01 - Airbag.flac",
+				Probe:      sdk.ParseProbe{Tags: map[string]string{"title": "Airbag", "date": "2017"}},
+				Candidates: []sdk.Candidate{later, original}, WantID: "",
+				MinScore: music.AutoApplyThreshold - 0.01},
+		},
+	}
+}
+
 func tagPoorRipFamily() sdktest.MatchFamily {
 	candidates := []sdk.Candidate{
 		{ID: "midnight-drive", Title: "Midnight Drive"},
@@ -282,6 +310,13 @@ func tagPoorRipFamily() sdktest.MatchFamily {
 				Candidates: []sdk.Candidate{{ID: "zero", Title: "00"}}, WantID: "", MinScore: music.AutoApplyThreshold - 0.01},
 			{Name: "spaced-empty-residue-fallback-does-not-auto-apply", Path: "00 - .flac",
 				Candidates: []sdk.Candidate{{ID: "zero", Title: "00"}}, WantID: "", MinScore: music.AutoApplyThreshold - 0.01},
+			// An ordinal-as-title stays non-distinctive even when an
+			// album-level DATE tag supplies a matching year.
+			{Name: "ordinal-title-with-date-tag-does-not-auto-apply", Path: "03 -.flac",
+				Probe:      sdk.ParseProbe{Tags: map[string]string{"date": "2004"}},
+				Candidates: []sdk.Candidate{{ID: "three", Title: "03", Year: 2004}}, WantID: "", MinScore: music.AutoApplyThreshold - 0.01},
+			{Name: "parenthesised-year-title-does-not-auto-apply", Path: "01 - (1999).flac",
+				Candidates: []sdk.Candidate{{ID: "y1999", Title: "1999"}}, WantID: "", MinScore: music.AutoApplyThreshold - 0.01},
 		},
 	}
 }

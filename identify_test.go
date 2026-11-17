@@ -1,8 +1,10 @@
 package music_test
 
 import (
+	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	sdk "github.com/beamfall/plugin-sdk"
@@ -97,6 +99,7 @@ func TestIdentifyTaggedTrackSearchesRecordings(t *testing.T) {
 		map[string]any{"id": "rec-airbag-other", "title": "Airbag", "first-release-date": "2015"},
 	}}
 	lookupDoc := map[string]any{"id": "rec-airbag-1997", "title": "Airbag", "first-release-date": "1997-05-21",
+		"releases": []any{map[string]any{"id": "rel-ok-computer", "title": "OK Computer"}},
 		"artist-credit": []any{map[string]any{"name": "Radiohead",
 			"artist": map[string]any{"id": "artist-radiohead", "name": "Radiohead", "sort-name": "Radiohead"}}}}
 
@@ -135,6 +138,23 @@ func TestIdentifyTaggedTrackSearchesRecordings(t *testing.T) {
 	}
 	if trace.Fields["title"] != "Airbag" || trace.Fields["year"] != "1997" {
 		t.Errorf("lookup fields = %v, want title Airbag, year 1997", trace.Fields)
+	}
+	// Tracks take Cover Art Archive art from the recording's first release.
+	// Core's JSON resolver indexes arrays ("releases.0.id"); sdktest v0.4.0's
+	// trace resolver walks objects only, so the slot is pinned on the spec and
+	// rendered here the way core's renderArtworkURL does (PathEscape into {value}).
+	releaseID := lookupDoc["releases"].([]any)[0].(map[string]any)["id"].(string)
+	for slot, want := range map[string]string{
+		"poster": "https://coverartarchive.org/release/rel-ok-computer/front",
+		"thumb":  "https://coverartarchive.org/release/rel-ok-computer/front-500",
+	} {
+		if got := spec.ArtworkMap[slot]; got != "releases.0.id" {
+			t.Errorf("ArtworkMap[%s] = %q, want releases.0.id", slot, got)
+		}
+		got := strings.ReplaceAll(spec.ArtworkURLTemplates[slot], "{value}", url.PathEscape(releaseID))
+		if got != want {
+			t.Errorf("%s artwork = %q, want %q", slot, got, want)
+		}
 	}
 }
 

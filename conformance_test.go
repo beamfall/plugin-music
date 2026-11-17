@@ -84,9 +84,9 @@ func TestParseConformance(t *testing.T) {
 			// No letter-bearing title (CORE-2313): the trimmed stem is the
 			// title, never core's raw-stem fallback; the scorer keeps a
 			// bare number from auto-applying.
-			Name:   "bare-number stem falls back to the stem",
+			Name:   "bare-number stem falls back to the stem and is the track ordinal",
 			Path:   "07.flac",
-			Want:   sdk.ParsedMedia{Title: "07", Class: "audio"},
+			Want:   sdk.ParsedMedia{Title: "07", Class: "audio", Index: 7},
 			WantOK: true,
 		},
 		{
@@ -106,6 +106,27 @@ func TestParseConformance(t *testing.T) {
 			Path:   "00 -.flac",
 			Probe:  sdk.ParseProbe{HasAudio: true, Tags: map[string]string{"title": "Intro"}},
 			Want:   sdk.ParsedMedia{Title: "Intro", Class: "audio"},
+			WantOK: true,
+		},
+		{
+			Name:   "year-like 4-digit stem is a title, not an ordinal",
+			Path:   "1979.flac",
+			Want:   sdk.ParsedMedia{Title: "1979", Class: "audio"},
+			WantOK: true,
+		},
+		{
+			Name:   "parenthesised year residue is a (non-distinctive) numeric title",
+			Path:   "01 - (1999).flac",
+			Want:   sdk.ParsedMedia{Title: "1999", Class: "audio", Index: 1},
+			WantOK: true,
+		},
+		{
+			Name: "ORIGINALDATE wins over a reissue DATE for the identify year",
+			Path: "01 - Airbag.flac",
+			Probe: sdk.ParseProbe{HasAudio: true, Tags: map[string]string{
+				"title": "Airbag", "date": "2017-06-23", "originaldate": "1997-05-21",
+			}},
+			Want:   sdk.ParsedMedia{Title: "Airbag", Class: "audio", Index: 1, Year: 1997},
 			WantOK: true,
 		},
 		{
@@ -131,9 +152,13 @@ func TestScoreConformance(t *testing.T) {
 		{Name: "containment (no year) is docked below auto-apply", CandTitle: "So What (Remastered)", CandYear: 0,
 			Parsed: sdk.ParsedMedia{Title: "So What"}, Want: 0.60},
 		{Name: "bare-number exact title (no year) stays below auto-apply", CandTitle: "00", CandYear: 0,
-			Parsed: sdk.ParsedMedia{Title: "00"}, Want: 0.60},
-		{Name: "bare-number exact title with corroborating year", CandTitle: "1979", CandYear: 1996,
-			Parsed: sdk.ParsedMedia{Title: "1979", Year: 1996}, Want: 1.0},
+			Parsed: sdk.ParsedMedia{Title: "00"}, Want: 0.70},
+		{Name: "bare-number exact title with exact year still stays below auto-apply", CandTitle: "03", CandYear: 2004,
+			Parsed: sdk.ParsedMedia{Title: "03", Year: 2004}, Want: 0.70},
+		{Name: "reissue: parsed year later than the original ranks but does not auto-apply", CandTitle: "So What",
+			CandYear: 1959, Parsed: sdk.ParsedMedia{Title: "So What", Year: 1997}, Want: 0.745},
+		{Name: "later cover: candidate year after the parsed year gets no year credit", CandTitle: "So What",
+			CandYear: 1997, Parsed: sdk.ParsedMedia{Title: "So What", Year: 1959}, Want: 0.70},
 		{Name: "non-Latin exact title", CandTitle: "夜に駆ける", CandYear: 0,
 			Parsed: sdk.ParsedMedia{Title: "夜に駆ける"}, Want: 1.0},
 	})

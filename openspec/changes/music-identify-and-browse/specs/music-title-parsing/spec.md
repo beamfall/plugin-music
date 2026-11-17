@@ -25,3 +25,18 @@ It SHALL fail only when none of these yields any text.
 
 - **WHEN** the file is `00 -.flac` and carries the TITLE tag `Intro`
 - **THEN** the title is `Intro`
+
+#### Scenario: Parenthesised year as the only title
+
+- **WHEN** the file is `01 - (1999).flac` and carries no TITLE tag
+- **THEN** the parse succeeds with title `1999` and track 1, and that title never auto-applies
+
+### Requirement: A bare ordinal stem is the track index
+
+The parser SHALL take the track index from a filename stem of one to three digits when no tag
+supplies a track number.
+
+#### Scenario: Bare ordinal stem
+
+- **WHEN** the file is `07.flac` and carries no tags
+- **THEN** the parse succeeds with title `07` and track 7
