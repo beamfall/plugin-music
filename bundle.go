@@ -30,8 +30,8 @@ func Bundle() sdk.Bundle {
 	return sdk.Bundle{
 		ID:          PluginID,
 		Version:     "0.1.5",
-		SDKFloor:    "0.4.3",
-		SDKCeiling:  "0.4.3",
+		SDKFloor:    "0.4.4",
+		SDKCeiling:  "0.4.4",
 		DisplayName: sdk.LocaleString{"en": "Music", "fr": "Musique"},
 		// A Track is Media — display label only, never a schema
 		// identifier.
