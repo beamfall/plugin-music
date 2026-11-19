@@ -106,9 +106,10 @@ func Bundle() sdk.Bundle {
 		},
 		EntityKinds: []sdk.EntityKind{
 			{
-				Name:        "artist",
-				DisplayName: sdk.LocaleString{"en": "Artist", "fr": "Artiste"},
-				Archetype:   "person",
+				Name:               "artist",
+				FullTextSearchable: true,
+				DisplayName:        sdk.LocaleString{"en": "Artist", "fr": "Artiste"},
+				Archetype:          "person",
 				Fields: []sdk.FieldSpec{
 					{Name: "sort-name", Type: "text",
 						Label: sdk.LocaleString{"en": "Sort Name", "fr": "Nom de tri"}},
@@ -127,9 +128,10 @@ func Bundle() sdk.Bundle {
 				},
 			},
 			{
-				Name:        "album",
-				DisplayName: sdk.LocaleString{"en": "Album", "fr": "Album"},
-				Archetype:   "container",
+				Name:               "album",
+				FullTextSearchable: true,
+				DisplayName:        sdk.LocaleString{"en": "Album", "fr": "Album"},
+				Archetype:          "container",
 				// Album children carry a defined play order — (disc,
 				// track) — so play-next walks the album.
 				// Disc number is a sort field, not structure: no Disc

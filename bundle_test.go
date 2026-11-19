@@ -186,3 +186,19 @@ func TestBundleCompatibleWithPinnedSDK(t *testing.T) {
 		t.Fatalf("Bundle() compat range [%s, %s] excludes pinned SDK %s", b.SDKFloor, b.SDKCeiling, sdk.Version)
 	}
 }
+
+// CORE-2321: matching tracks alone does not provide artist/album page results.
+func TestArtistsAndAlbumsOptIntoSearch(t *testing.T) {
+	found := 0
+	for _, kind := range Bundle().EntityKinds {
+		if kind.Name == "artist" || kind.Name == "album" {
+			found++
+			if !kind.FullTextSearchable {
+				t.Errorf("%s does not opt into entity search", kind.Name)
+			}
+		}
+	}
+	if found != 2 {
+		t.Fatalf("found %d searchable browse kinds, want both artist and album", found)
+	}
+}
