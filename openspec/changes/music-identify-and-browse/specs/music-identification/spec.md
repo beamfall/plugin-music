@@ -20,7 +20,8 @@ title, year and summary SHALL come from the recording's `title`, `first-release-
 #### Scenario: Tagged Track identifies to its recording
 
 - **WHEN** a Track tagged with title `Airbag` and date `1997` is searched
-- **THEN** the search request targets `/recording?query=Airbag&fmt=json`
+- **THEN** the search request targets `/recording?query=(Airbag)&fmt=json` (CORE-2333 narrows it
+  further when the Track carries artist, album or recording MBID tags)
 - **AND** the recording titled `Airbag` first released in 1997 scores at or above the auto-apply
   threshold and is the single best candidate
 - **AND** the lookup maps title `Airbag` and year `1997`

@@ -298,9 +298,12 @@ func Bundle() sdk.Bundle {
 				// album, and applying one would write the album's title onto
 				// the Track. GET /recording?query=… returns {"recordings":
 				// [{id, title, first-release-date, disambiguation}, …]}.
-				// Core passes only the parsed title as {query}; narrowing by
-				// artist/album needs a core or SDK query seam.
-				SearchTemplate:  "/recording?query={query}&fmt=json",
+				// The parsed title is {query}; the parser's search hints
+				// (CORE-2333, search_hints.go) append Lucene clauses for the
+				// tagged recording MBID, artist and album. Each hint is
+				// optional and empty when untagged, which keeps the
+				// title-only search.
+				SearchTemplate:  "/recording?query=({query}){hint.recording_clause}{hint.artist_clause}{hint.album_clause}&fmt=json",
 				CandidatesPath:  "recordings",
 				CandidateIDPath: "id",
 				// Recording lookup by MBID, with artist credits, releases

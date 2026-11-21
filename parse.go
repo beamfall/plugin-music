@@ -53,6 +53,7 @@ func (p *Parser) Parse(path string, probe sdk.ParseProbe) (sdk.ParsedMedia, bool
 	parsed.Class = "audio"
 
 	tags := mapHydration(probe.Tags, path, false)
+	parsed.Hints = recordingSearchHints(tags)
 	parsed.Index = tags.TrackNumber
 	if tags.DiscNumber > 0 {
 		parsed.Sequence = strconv.Itoa(tags.DiscNumber)

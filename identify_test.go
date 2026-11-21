@@ -104,13 +104,14 @@ func TestIdentifyTaggedTrackSearchesRecordings(t *testing.T) {
 			"artist": map[string]any{"id": "artist-radiohead", "name": "Radiohead", "sort-name": "Radiohead"}}}}
 
 	trace := sdktest.CompileScraperTrace(spec, sdktest.TraceInput{
-		Query: parsed.Title, ID: "rec-airbag-1997", SearchDoc: searchDoc, LookupDoc: lookupDoc,
+		Query: parsed.Title, Hints: parsed.Hints, ID: "rec-airbag-1997", SearchDoc: searchDoc, LookupDoc: lookupDoc,
 	})
 	urls := map[string]string{}
 	for _, r := range trace.Requests {
 		urls[r.Role] = r.URL
 	}
-	if got, want := urls["search"], "https://musicbrainz.org/ws/2/recording?query=Airbag&fmt=json"; got != want {
+	// The tagged artist and album narrow the title search (CORE-2333).
+	if got, want := urls["search"], "https://musicbrainz.org/ws/2/recording?query=(Airbag)+AND+artist%3A%22Radiohead%22+AND+release%3A%22OK+Computer%22&fmt=json"; got != want {
 		t.Errorf("search URL = %q, want %q (all requests: %v)", got, want, urls)
 	}
 	if got, want := urls["lookup"], "https://musicbrainz.org/ws/2/recording/rec-airbag-1997?fmt=json&inc=artist-credits+releases+genres"; got != want {
