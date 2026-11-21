@@ -174,6 +174,10 @@ func Bundle() sdk.Bundle {
 					// Media. A Genre classifies many Tracks; a Track
 					// may carry several genres.
 					{Name: "classifies", ToKind: sdk.MediaKindName},
+					// Genres sourced from the Track's album release group
+					// (CORE-2884). Kept apart from tag genres so a rescan
+					// and an enrichment pass replace only their own rows.
+					{Name: AlbumGenreRelation, ToKind: sdk.MediaKindName},
 				},
 			},
 		},

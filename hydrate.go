@@ -174,7 +174,7 @@ func mapHydration(tags map[string]string, path string, includeSidecar bool) Hydr
 	// is always a standard, non-free-text frame.
 	h.AlbumArtist = firstTagValue(lookup, "album_artist", "albumartist")
 	h.AlbumArtistMBID = firstTagValue(lookup, "musicbrainz_albumartistid", "musicbrainz album artist id")
-	h.Genres = splitTagValues(firstTagValue(lookup, "genre"))
+	h.Genres = decodeGenres(splitTagValues(firstTagValue(lookup, "genre")))
 	h.Composer = firstTagValue(lookup, "composer", "tcom", "writer", "©wrt")
 	h.ArtistSort = firstTagValue(lookup, "artistsort", "artist_sort", "sort_artist", "tsop", "soar")
 	h.AlbumSort = firstTagValue(lookup, "albumsort", "album_sort", "sort_album", "tsoa", "soal")
