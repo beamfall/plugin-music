@@ -1,7 +1,8 @@
 # kind-plurals Specification
 
 ## Purpose
-TBD - created by archiving change core-2820-kind-plurals. Update Purpose after archive.
+The plural display names this plugin declares for its entity kinds, which clients use to head a group
+of several entities of one kind.
 
 ## Requirements
 
