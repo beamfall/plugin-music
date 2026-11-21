@@ -30,8 +30,8 @@ func Bundle() sdk.Bundle {
 	return sdk.Bundle{
 		ID:          PluginID,
 		Version:     "0.1.5",
-		SDKFloor:    "0.4.6",
-		SDKCeiling:  "0.4.6",
+		SDKFloor:    "0.4.7",
+		SDKCeiling:  "0.4.7",
 		DisplayName: sdk.LocaleString{"en": "Music", "fr": "Musique"},
 		// A Track is Media — display label only, never a schema
 		// identifier.
@@ -109,6 +109,7 @@ func Bundle() sdk.Bundle {
 				Name:               "artist",
 				FullTextSearchable: true,
 				DisplayName:        sdk.LocaleString{"en": "Artist", "fr": "Artiste"},
+				PluralDisplayName:  sdk.LocaleString{"en": "Artists", "fr": "Artistes"},
 				Archetype:          "person",
 				Fields: []sdk.FieldSpec{
 					{Name: "sort-name", Type: "text",
@@ -131,6 +132,7 @@ func Bundle() sdk.Bundle {
 				Name:               "album",
 				FullTextSearchable: true,
 				DisplayName:        sdk.LocaleString{"en": "Album", "fr": "Album"},
+				PluralDisplayName:  sdk.LocaleString{"en": "Albums", "fr": "Albums"},
 				Archetype:          "container",
 				// Album children carry a defined play order — (disc,
 				// track) — so play-next walks the album.
@@ -163,9 +165,10 @@ func Bundle() sdk.Bundle {
 			},
 			{
 				// Flat — hierarchical genres are a taxonomy tar pit.
-				Name:        "genre",
-				DisplayName: sdk.LocaleString{"en": "Genre", "fr": "Genre"},
-				Archetype:   "category",
+				Name:              "genre",
+				DisplayName:       sdk.LocaleString{"en": "Genre", "fr": "Genre"},
+				PluralDisplayName: sdk.LocaleString{"en": "Genres", "fr": "Genres"},
+				Archetype:         "category",
 				Relations: []sdk.RelationSpec{
 					// Genre classification, retargeted to the Track Media
 					// Media. A Genre classifies many Tracks; a Track
