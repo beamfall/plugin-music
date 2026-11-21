@@ -3,7 +3,7 @@ module github.com/beamfall/plugin-music
 go 1.27.3
 
 require (
-	github.com/beamfall/plugin-sdk v0.4.7
+	github.com/beamfall/plugin-sdk v0.4.8
 	golang.org/x/sys v0.47.0
 )
 
