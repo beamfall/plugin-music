@@ -150,6 +150,10 @@ func Bundle() sdk.Bundle {
 						Label: sdk.LocaleString{"en": "MusicBrainz Release Group ID", "fr": "Identifiant de groupe de parution MusicBrainz"}},
 					{Name: "compilation", Type: "flag",
 						Label: sdk.LocaleString{"en": "Compilation", "fr": "Compilation"}},
+					// Release type group (album, ep, single, live, …):
+					// ReleaseTypeField, values from ReleaseTypeGroups.
+					{Name: ReleaseTypeField, Type: "text", Filterable: true,
+						Label: sdk.LocaleString{"en": "Release Type", "fr": "Type de parution"}},
 				},
 				Relations: []sdk.RelationSpec{
 					// Ordered Album membership, retargeted to the Track Media

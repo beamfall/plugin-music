@@ -112,6 +112,10 @@ type Hydration struct {
 	Comment         string
 	Compilation     bool
 	CompilationSet  bool
+	// ReleaseType is the release's type group (ReleaseTypeAlbum, …) from the
+	// MusicBrainz release-group type tag, else "compilation" for a
+	// compilation; "" when neither says.
+	ReleaseType string
 	// RecordingMBID / ReleaseMBID / ArtistMBID are MusicBrainz identifiers
 	// embedded by Picard. RecordingMBID is written through the generic media
 	// external ID substrate so scrobble adapters can read it.
@@ -133,7 +137,7 @@ func (h Hydration) Empty() bool {
 		h.AlbumArtist == "" && len(h.Genres) == 0 &&
 		h.Composer == "" && h.ArtistSort == "" && h.AlbumSort == "" &&
 		h.AlbumArtistSort == "" && h.Lyrics == "" && !h.BPMSet &&
-		!h.RatingSet && h.Comment == "" && !h.CompilationSet &&
+		!h.RatingSet && h.Comment == "" && !h.CompilationSet && h.ReleaseType == "" &&
 		h.RecordingMBID == "" && h.ReleaseMBID == "" &&
 		h.ReleaseGroupMBID == "" && h.ArtistMBID == ""
 }
@@ -204,6 +208,10 @@ func mapHydration(tags map[string]string, path string, includeSidecar bool) Hydr
 	if h.Compilation && (h.AlbumArtist == "" || h.Sources["albumartist"] == HydrationSourcePath) {
 		h.AlbumArtist = "Various Artists"
 		h.Sources["albumartist"] = HydrationSourceTag
+	}
+	h.ReleaseType = ParseReleaseType(firstTagValue(lookup, "releasetype", "musicbrainz_albumtype", "musicbrainz album type", "release type"))
+	if h.ReleaseType == "" && h.Compilation {
+		h.ReleaseType = ReleaseTypeCompilation
 	}
 	if len(h.Sources) == 0 {
 		h.Sources = nil
