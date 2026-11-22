@@ -43,7 +43,7 @@ func ReleaseTypeGroups() []ReleaseTypeGroup {
 		{ReleaseTypeSingle, sdk.LocaleString{"en": "Singles", "fr": "Singles"}},
 		{ReleaseTypeLive, sdk.LocaleString{"en": "Live Albums", "fr": "Albums live"}},
 		{ReleaseTypeCompilation, sdk.LocaleString{"en": "Compilations", "fr": "Compilations"}},
-		{ReleaseTypeSoundtrack, sdk.LocaleString{"en": "Soundtracks", "fr": "Bandes originales"}},
+		{ReleaseTypeSoundtrack, sdk.LocaleString{"en": "Soundtracks", "fr": "Musiques de film"}},
 		{ReleaseTypeRemix, sdk.LocaleString{"en": "Remixes", "fr": "Remix"}},
 		{ReleaseTypeOther, sdk.LocaleString{"en": "Other Releases", "fr": "Autres parutions"}},
 	}
