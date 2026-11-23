@@ -189,3 +189,35 @@ func TestHomeLayoutBrowsesAlbumsAndArtists(t *testing.T) {
 	}
 	sdktest.RequireBundleValid(t, b)
 }
+
+// TestHomeLayoutEndsWithAlbumsGrid pins CORE-3347: the home lists no Tracks
+// through all-items, ends with an Albums grid, and no two home Sections read
+// the same Source, so no album or artist is listed twice.
+func TestHomeLayoutEndsWithAlbumsGrid(t *testing.T) {
+	var home *sdk.LayoutSpec
+	b := music.Bundle()
+	for i := range b.Layouts {
+		if b.Layouts[i].ID == "home" {
+			home = &b.Layouts[i]
+		}
+	}
+	if home == nil || len(home.Sections) == 0 {
+		t.Fatal("no home layout with sections")
+	}
+	seen := map[string]string{}
+	for _, s := range home.Sections {
+		if s.Source.Kind == "all-items" {
+			t.Errorf("home section %q lists every Track through all-items", s.ID)
+		}
+		key := s.Source.Kind + "/" + s.Source.EntityKind
+		if other, ok := seen[key]; ok {
+			t.Errorf("home sections %q and %q both read Source %s", other, s.ID, key)
+		}
+		seen[key] = s.ID
+	}
+	last := home.Sections[len(home.Sections)-1]
+	if last.Kind != "grid" || last.Source.Kind != "entity-items" || last.Source.EntityKind != "album" {
+		t.Errorf("last home section = %q (%s, %s/%s), want an album entity-items grid",
+			last.ID, last.Kind, last.Source.Kind, last.Source.EntityKind)
+	}
+}

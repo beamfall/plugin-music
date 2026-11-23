@@ -200,17 +200,19 @@ func Bundle() sdk.Bundle {
 			{ID: "recently-added", Kind: "shelf",
 				Title:       sdk.LocaleString{"en": "Recently Added", "fr": "Ajouts récents"},
 				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "recently-added"}},
-			// Album and Artist browse rows: entity-items lists the declared
-			// Entity Kind's members; each opens its detail Layout below.
-			{ID: "albums", Kind: "shelf",
-				Title:       sdk.LocaleString{"en": "Albums", "fr": "Albums"},
-				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-items", EntityKind: "album"}},
+			// Artist and Album browse: entity-items lists the declared Entity
+			// Kind's members; each opens its detail Layout below. Albums close
+			// the page as a grid, so the home shows many albums, and it is the
+			// only Section reading that Source: an Albums shelf above it would
+			// repeat the same albums. The home declares no all-items grid of
+			// Tracks (CORE-3347, as Film/TV did in CORE-3066); every Track stays
+			// reachable through Core's Library tab.
 			{ID: "artists", Kind: "shelf",
 				Title:       sdk.LocaleString{"en": "Artists", "fr": "Artistes"},
 				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-items", EntityKind: "artist"}},
-			{ID: "library", Kind: "grid",
-				Title:       sdk.LocaleString{"en": "Library", "fr": "Bibliothèque"},
-				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "all-items"}},
+			{ID: "albums", Kind: "grid",
+				Title:       sdk.LocaleString{"en": "Albums", "fr": "Albums"},
+				ArtworkSlot: "poster", Source: sdk.SourceSpec{Kind: "entity-items", EntityKind: "album"}},
 		}},
 			// Album and Artist pages list the entity's Tracks.
 			{ID: "album-detail", Role: "detail", EntityKind: "album", Sections: []sdk.SectionSpec{
