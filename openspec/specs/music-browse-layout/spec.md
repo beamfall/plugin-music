@@ -1,7 +1,8 @@
 # music-browse-layout Specification
 
 ## Purpose
-TBD - created by archiving change core-3347-music-home-albums-grid. Update Purpose after archive.
+What the Music plugin's home Layout (the Library's Recommended view) shows: artists and albums,
+never a flat list of Tracks.
 
 ## Requirements
 
